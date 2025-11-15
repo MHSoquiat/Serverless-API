@@ -58,10 +58,10 @@ test-root:
     - terraform init -backend-config="bucket=$TF_STATE_BUCKET"
     - terraform validate
     - terraform plan
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "main"'
-      changes:
-        - root/**/*
+  # rules:
+  #   - if: '$CI_COMMIT_BRANCH == "main"'
+  #     changes:
+  #       - root/**/*
 
 build-root:
   stage: build
@@ -71,7 +71,7 @@ build-root:
     - cd root
     - terraform init -backend-config="bucket=$TF_STATE_BUCKET"
     - terraform apply --auto-approve
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "main"'
-      changes:
-        - root/**/*
+  # rules:
+  #   - if: '$CI_COMMIT_BRANCH == "main"'
+  #     changes:
+  #       - root/**/*
