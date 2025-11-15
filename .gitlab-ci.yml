@@ -37,10 +37,10 @@ build-sl:
     # paths:
     #   - statefile-locking/terraform.tfstate
     # expire_in: 1 day # Optional
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "main"'
-      changes:
-        - statefile-locking/**/*
+  # rules:
+  #   - if: '$CI_COMMIT_BRANCH == "main"'
+  #     changes:
+  #       - statefile-locking/**/*
 
 
 # --- root jobs (main configuration) ---
