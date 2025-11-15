@@ -45,7 +45,7 @@ test-root:
   script:
     - cd root
     # The TF_STATE_BUCKET variable is now available from the 'build-sl' job
-    - echo "Using backend S3 bucket: $TF_STATE_BUCKET"
+    - echo "Using backend S3 bucket $TF_STATE_BUCKET"
     # Note: Your root Terraform config must be able to use this variable in its backend block
     - terraform init -backend-config="bucket=$TF_STATE_BUCKET"
     - terraform validate
