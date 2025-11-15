@@ -39,7 +39,7 @@ get-backend-vars:
     - terraform init
     # Extract the value, remove leading/trailing whitespace/control characters, and check if empty.
     - BUCKET_NAME=$(terraform output -raw statefile | tr -d '\n\r ' | tr -d '\033[0-9;]*[a-zA-Z]')
-    - if [ -z "$BUCKET_NAME" ]; then echo "Error: TF output 'statefile' is empty or invalid."; exit 1; fi
+    - if [ -z "$BUCKET_NAME" ]; then echo "Error TF output 'statefile' is empty or invalid."; exit 1; fi
     - echo "TF_STATE_BUCKET=$BUCKET_NAME" > backend.env
     - echo "Successfully retrieved TF_STATE_BUCKET from state."
   artifacts:
