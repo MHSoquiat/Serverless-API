@@ -51,7 +51,12 @@ test-root:
   script:
     - cd root
     - echo "Using backend S3 bucket $TF_STATE_BUCKET"
-    - terraform init -backend-config="bucket=$TF_STATE_BUCKET"
+    - terraform init \
+      -backend-config="bucket=$TF_STATE_BUCKET" \
+      -backend-config="key=environments/root-module.tfstate" \
+      -backend-config="region=ap-southeast-1" \
+      -backend-config="use_lockfile=true" \
+      -backend-config="encrypt=true"
     - terraform validate
     - terraform plan
   rules:
@@ -69,7 +74,12 @@ build-root:
     - get-backend-vars
   script:
     - cd root
-    - terraform init -backend-config="bucket=$TF_STATE_BUCKET"
+    - terraform init \
+      -backend-config="bucket=$TF_STATE_BUCKET" \
+      -backend-config="key=environments/root-module.tfstate" \
+      -backend-config="region=ap-southeast-1" \
+      -backend-config="use_lockfile=true" \
+      -backend-config="encrypt=true"
     - terraform apply --auto-approve
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'

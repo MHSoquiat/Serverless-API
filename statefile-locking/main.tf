@@ -27,21 +27,21 @@ resource "aws_s3_bucket_lifecycle_configuration" "tfstate_lifecycle" {
     }
 
     noncurrent_version_expiration {
-      noncurrent_days = var.s3_lifecycle_transition_days.noncurrent_days
+      noncurrent_days = 30
     }
 
     transition {
-      days          = var.s3_lifecycle_transition_days.standard_ia_days
+      days          = 30
       storage_class = "STANDARD_IA"
     }
 
     transition {
-      days          = var.s3_lifecycle_transition_days.glacier_days
+      days          = 90
       storage_class = "GLACIER"
     }
 
     abort_incomplete_multipart_upload {
-      days_after_initiation = var.s3_lifecycle_transition_days.abort_days
+      days_after_initiation = 7
     }
   }
 }
