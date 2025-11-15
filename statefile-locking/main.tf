@@ -3,7 +3,7 @@ provider "aws" {
 }
 
 resource "aws_s3_bucket" "statefile" {
-  bucket = "statefile"
+  bucket = "statefile-soki-11"
 
   lifecycle {
     prevent_destroy = true
