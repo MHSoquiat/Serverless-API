@@ -69,11 +69,7 @@ resource "aws_iam_role_policy_attachment" "lb-log" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
-# terraform {
-#   backend "s3" {
-#     bucket = "statefile"
-#     key = "dev/terraform.tfstate"
-#     region = "us-east-1"
-#     encrypt = true
-#   }
-# }
+terraform {
+  backend "s3" {
+  }
+}
