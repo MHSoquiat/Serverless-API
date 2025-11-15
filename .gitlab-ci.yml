@@ -1,0 +1,61 @@
+stages:
+  - test
+  - build
+  - deploy # New stage for potential future use, but deploy is often in 'build' for IaC
+
+# --- statefile-locking jobs (e.g., your S3 backend/dynamodb setup) ---
+
+test-sl:
+  stage: test
+  script:
+    - cd statefile-locking
+    - terraform init
+    - terraform validate
+    - terraform plan
+
+build-sl: 
+  stage: build
+  # We assume statefile-locking produces a backend value you need,
+  # like the S3 bucket name or DynamoDB lock table name.
+  script: 
+    - cd statefile-locking
+    - terraform init
+    - terraform apply --auto-approve
+    # --- CRITICAL STEP 1: CAPTURE TERRAFORM OUTPUT TO DOTENV FILE ---
+    # Replace 'my_s3_bucket_name' with the actual output name in your statefile-locking module
+    - 'terraform output -raw my_s3_bucket_name | awk -v name="TF_STATE_BUCKET" "{print name\"=\"\$0}" > backend.env'
+    # For multiple outputs, repeat or use a small script
+    # - echo "TF_LOCK_TABLE=$(terraform output -raw my_lock_table_name)" >> backend.env
+  # --- CRITICAL STEP 2: REGISTER DOTENV ARTIFACT ---
+  artifacts:
+    reports:
+      dotenv: backend.env
+    # Optionally, you can also save the statefile-locking state if needed
+    # paths:
+    #   - statefile-locking/terraform.tfstate
+    # expire_in: 1 day # Optional
+
+# --- root jobs (main configuration) ---
+
+test-root:
+  stage: test
+  # --- CRITICAL STEP 3: DECLARE NEEDS TO INHERIT VARIABLES ---
+  needs:
+    - build-sl
+  script:
+    - cd root
+    # The TF_STATE_BUCKET variable is now available from the 'build-sl' job
+    - echo "Using backend S3 bucket: $TF_STATE_BUCKET"
+    # Note: Your root Terraform config must be able to use this variable in its backend block
+    - terraform init -backend-config="bucket=$TF_STATE_BUCKET"
+    - terraform validate
+    - terraform plan
+
+build-root:
+  stage: build
+  needs:
+    - build-sl
+  script:
+    - cd root
+    - terraform init -backend-config="bucket=$TF_STATE_BUCKET"
+    - terraform apply --auto-approve
