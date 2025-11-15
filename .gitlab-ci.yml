@@ -5,7 +5,7 @@ stages:
   - deploy # New stage for potential future use, but deploy is often in 'build' for IaC
 
 
-before-script:
+before_script:
   - apk add --no-cache curl unzip
   - TF_VERSION="1.13.5"
   - curl -L -o terraform.zip "https://releases.hashicorp.com/terraform/${TF_VERSION}/terraform_${TF_VERSION}_linux_amd64.zip"
