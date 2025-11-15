@@ -10,7 +10,7 @@ before_script:
   - apt-get install -y curl unzip
   - TF_VERSION="1.13.5"
   - curl -L -o terraform.zip "https://releases.hashicorp.com/terraform/${TF_VERSION}/terraform_${TF_VERSION}_linux_amd64.zip"
-  - unzip terrafrom.zip
+  - unzip terraform.zip
   - mv terraform /usr/local/bin
   - terraform --version
 
