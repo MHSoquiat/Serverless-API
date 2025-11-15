@@ -26,7 +26,7 @@ resource "aws_lambda_function" "lb-func" {
 
   environment {
     variables = {
-      GREETING = "Hello from Terraform!"
+      GREETING = "Hello from Soki!"
     }
   }
 }
@@ -71,6 +71,6 @@ resource "aws_iam_role_policy_attachment" "lb-log" {
 
 terraform {
   backend "s3" {
-    
+
   }
 }

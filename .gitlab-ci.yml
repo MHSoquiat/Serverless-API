@@ -1,5 +1,6 @@
 stages:
   - backend
+  - env
   - test
   - build
   - deploy 
@@ -32,7 +33,7 @@ setup-backend:
 
 # --- Backend Vars Retrieval (Always runs to satisfy dependencies) ---
 get-backend-vars:
-  stage: backend
+  stage: env
   script:
     - cd statefile-locking
     - terraform init
