@@ -26,7 +26,7 @@ resource "aws_lambda_function" "lb-func" {
 
   environment {
     variables = {
-      GREETING = "Greetings everyone!"
+      GREETING = "Greetings everyone, from Soki!"
     }
   }
 }
