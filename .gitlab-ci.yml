@@ -2,8 +2,7 @@ stages:
   - backend
   - test
   - build
-  - deploy # New stage for potential future use, but deploy is often in 'build' for IaC
-
+  - deploy 
 
 before_script:
   - apt-get update -y
@@ -14,65 +13,67 @@ before_script:
   - mv terraform /usr/local/bin
   - terraform --version
 
-# --- statefile-locking jobs (e.g., your S3 backend/dynamodb setup) ---
-
-build-sl:
+# --- Backend Setup (Runs infrequently/manually) ---
+setup-backend: 
   stage: backend
   script:
     - cd statefile-locking
     - terraform init
     - terraform validate
-    - terraform plan
-    - terraform init
     - terraform apply --auto-approve
-    # --- CRITICAL STEP 1: CAPTURE TERRAFORM OUTPUT TO DOTENV FILE ---
-    # Replace 'my_s3_bucket_name' with the actual output name in your statefile-locking module
-    - 'terraform output -raw my_s3_bucket_name | awk -v name="TF_STATE_BUCKET" "{print name\"=\"\$0}" > backend.env'
-    # For multiple outputs, repeat or use a small script
-    # - echo "TF_LOCK_TABLE=$(terraform output -raw my_lock_table_name)" >> backend.env
-  # --- CRITICAL STEP 2: REGISTER DOTENV ARTIFACT ---
+  rules:
+    - if: '$CI_COMMIT_TITLE =~ /backend-setup/'
+      when: manual
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      changes:
+        - statefile-locking/**/*
+      when: on_success
+    - when: never
+
+# --- Backend Vars Retrieval (Always runs to satisfy dependencies) ---
+get-backend-vars:
+  stage: backend
+  script:
+    - cd statefile-locking
+    - terraform init
+    - 'terraform output -raw statefile | awk -v name="TF_STATE_BUCKET" "{print name\"=\"\$0}" > backend.env'
+    - echo "Successfully retrieved TF_STATE_BUCKET from state."
   artifacts:
     reports:
       dotenv: backend.env
-    # Optionally, you can also save the statefile-locking state if needed
-    # paths:
-    #   - statefile-locking/terraform.tfstate
-    # expire_in: 1 day # Optional
-  # rules:
-  #   - if: '$CI_COMMIT_BRANCH == "main"'
-  #     changes:
-  #       - statefile-locking/**/*
+  when: on_success 
 
-
-# --- root jobs (main configuration) ---
-
+# --- Root Jobs: Test (Plan/Validation) ---
 test-root:
   stage: test
-  # --- CRITICAL STEP 3: DECLARE NEEDS TO INHERIT VARIABLES ---
   needs:
-    - build-sl
+    - get-backend-vars
   script:
     - cd root
-    # The TF_STATE_BUCKET variable is now available from the 'build-sl' job
     - echo "Using backend S3 bucket $TF_STATE_BUCKET"
-    # Note: Your root Terraform config must be able to use this variable in its backend block
     - terraform init -backend-config="bucket=$TF_STATE_BUCKET"
     - terraform validate
     - terraform plan
-  # rules:
-  #   - if: '$CI_COMMIT_BRANCH == "main"'
-  #     changes:
-  #       - root/**/*
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      changes:
+        - root/**/*
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      changes:
+        - root/**/*
 
+# --- Root Jobs: Build (Apply) ---
 build-root:
   stage: build
   needs:
-    - build-sl
+    - get-backend-vars
   script:
     - cd root
     - terraform init -backend-config="bucket=$TF_STATE_BUCKET"
     - terraform apply --auto-approve
-  # rules:
-  #   - if: '$CI_COMMIT_BRANCH == "main"'
-  #     changes:
-  #       - root/**/*
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      changes:
+        - root/**/*
+      when: on_success
+    - when: never
