@@ -4,22 +4,24 @@ stages:
   - build
   - deploy # New stage for potential future use, but deploy is often in 'build' for IaC
 
+
+before-script:
+  - apk add --no-cache curl unzip
+  - TF_VERSION="1.13.5"
+  - curl -L -o terraform.zip "https://releases.hashicorp.com/terraform/${TF_VERSION}/terraform_${TF_VERSION}_linux_amd64.zip"
+  - unzip terrafrom.zip
+  - mv terraform /usr/local/bin
+  - terraform --version
+
 # --- statefile-locking jobs (e.g., your S3 backend/dynamodb setup) ---
 
-test-sl:
+build-sl:
   stage: backend
   script:
     - cd statefile-locking
     - terraform init
     - terraform validate
     - terraform plan
-
-build-sl: 
-  stage: backend
-  # We assume statefile-locking produces a backend value you need,
-  # like the S3 bucket name or DynamoDB lock table name.
-  script: 
-    - cd statefile-locking
     - terraform init
     - terraform apply --auto-approve
     # --- CRITICAL STEP 1: CAPTURE TERRAFORM OUTPUT TO DOTENV FILE ---
@@ -35,6 +37,11 @@ build-sl:
     # paths:
     #   - statefile-locking/terraform.tfstate
     # expire_in: 1 day # Optional
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      changes:
+        - statefile-locking/**/*
+
 
 # --- root jobs (main configuration) ---
 
@@ -51,6 +58,10 @@ test-root:
     - terraform init -backend-config="bucket=$TF_STATE_BUCKET"
     - terraform validate
     - terraform plan
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      changes:
+        - root/**/*
 
 build-root:
   stage: build
@@ -60,3 +71,7 @@ build-root:
     - cd root
     - terraform init -backend-config="bucket=$TF_STATE_BUCKET"
     - terraform apply --auto-approve
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      changes:
+        - root/**/*
