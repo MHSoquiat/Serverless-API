@@ -1,3 +1,3 @@
 output "bucket" {
-  value = aws_s3_bucket.statefile.bucket
+  value = aws_s3_bucket.statefile.id
 }

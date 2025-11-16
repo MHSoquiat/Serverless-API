@@ -38,24 +38,25 @@ get-backend-vars:
     - cd statefile-locking
     - terraform init
     
-    # 1. Extract the raw bucket name.
-    - BUCKET_RAW=$(terraform output -raw statefile)
+    # 1. Capture the output. Redirect stderr (2) to stdout (1) and then to /dev/null
+    #    This ensures any warnings/errors (like "No outputs found") are discarded.
+    - BUCKET_RAW=$(terraform output -raw statefile 2>&1 >/dev/null)
     
-    # 2. Use 'sed' to remove ALL non-printable characters (including color codes and the garbage output).
+    # 2. Re-run extraction, ensuring the output is clean.
+    - BUCKET_RAW=$(terraform output -raw statefile 2>/dev/null)
     - BUCKET_CLEAN=$(echo "$BUCKET_RAW" | sed 's/[^[:print:]]//g')
     
-    # 3. Validation: Check if the bucket name is now empty or still invalid.
-    - if [ -z "$BUCKET_CLEAN" ]; then echo "Error; TF output 'statefile' is empty or invalid after cleanup."; exit 1; fi
+    # 3. Validation: The value should be clean now, if the output exists.
+    - if [ -z "$BUCKET_CLEAN" ]; then echo "Error; TF output 'statefile' is empty or missing. Did 'setup-backend' run?"; exit 1; fi
     
     # 4. Write the clean variable to the dotenv file.
     - echo "TF_STATE_BUCKET=$BUCKET_CLEAN" > backend.env
     
-    - echo "Successfully retrieved TF_STATE_BUCKET from state $BUCKET_CLEAN"
+    - echo "Successfully retrieved TF_STATE_BUCKET from state; $BUCKET_CLEAN"
   artifacts:
     reports:
-      # Ensure this path is correct:
       dotenv: statefile-locking/backend.env
-  when: on_success 
+  when: on_success
 
 # --- Root Jobs: Test (Plan/Validation) ---
 test-root:
