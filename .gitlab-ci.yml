@@ -2,6 +2,7 @@ stages:
   - validate
   - plan
   - apply
+  - notify     # <--- NEW STAGE
 
 variables:
   TF_VERSION: "1.13.5"
@@ -9,7 +10,8 @@ variables:
 before_script:
   - set -euo pipefail
   - apt-get update -y
-  - apt-get install -y curl unzip
+  - apt-get install -y curl unzip python3 python3-pip
+  - pip3 install boto3  # Needed for SES email
   - curl -L -o terraform.zip "https://releases.hashicorp.com/terraform/${TF_VERSION}/terraform_${TF_VERSION}_linux_amd64.zip"
   - unzip terraform.zip
   - mv terraform /usr/local/bin/
@@ -52,8 +54,50 @@ apply:
     - cd root
     - terraform init
     - terraform apply -auto-approve tfplan
+    - terraform output -raw api_endpoint > api_endpoint.txt   # <--- Save endpoint
+  artifacts:
+    paths:
+      - root/api_endpoint.txt
   dependencies:
     - plan
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
       when: manual
+
+# --- NOTIFY STAGE (SES EMAIL) ---
+notify:
+  stage: notify
+  script:
+    - cd root
+    - API_ENDPOINT=$(cat api_endpoint.txt)
+
+      # Python SES email sender
+    - |
+      cat <<EOF > send_email.py
+      import boto3
+      import os
+
+      ses = boto3.client(
+          "ses",
+          region_name=os.environ["SES_REGION"],
+          aws_access_key_id=os.environ["SES_SMTP_USERNAME"],
+          aws_secret_access_key=os.environ["SES_SMTP_PASSWORD"]
+      )
+
+      ses.send_email(
+          Source=os.environ["SES_FROM_EMAIL"],
+          Destination={"ToAddresses": [os.environ["SES_TO_EMAIL"]]},
+          Message={
+              "Subject": {"Data": "Terraform Deployment Complete"},
+              "Body": {
+                  "Text": {"Data": f"Your API has been deployed.\nEndpoint: {os.environ['API_ENDPOINT']}"}
+              }
+          },
+      )
+      EOF
+
+    - API_ENDPOINT="$API_ENDPOINT" python3 send_email.py
+  dependencies:
+    - apply
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
