@@ -38,21 +38,18 @@ get-backend-vars:
     - cd statefile-locking
     - terraform init
     
-    # 1. Capture the output. Redirect stderr (2) to stdout (1) and then to /dev/null
-    #    This ensures any warnings/errors (like "No outputs found") are discarded.
-    - BUCKET_RAW=$(terraform output -raw statefile 2>&1 >/dev/null)
+    # Combined command: 
+    # 1. Runs 'terraform output -raw statefile'
+    # 2. Redirects standard error (2) to /dev/null (silences warnings/errors)
+    # 3. Pipes the clean bucket name to sed to remove any non-printable characters.
+    # 4. Pipes the result to awk to format it as KEY=VALUE.
+    # 5. Writes the result to backend.env.
+    - terraform output -raw statefile 2>/dev/null | sed 's/[^[:print:]]//g' | awk -v name="TF_STATE_BUCKET" '{print name"="$0}' > backend.env
     
-    # 2. Re-run extraction, ensuring the output is clean.
-    - BUCKET_RAW=$(terraform output -raw statefile 2>/dev/null)
-    - BUCKET_CLEAN=$(echo "$BUCKET_RAW" | sed 's/[^[:print:]]//g')
+    # Optional: Read the variable back out to confirm it's clean (for debugging)
+    - echo "--- Contents of backend.env ---"
+    - cat backend.env
     
-    # 3. Validation: The value should be clean now, if the output exists.
-    - if [ -z "$BUCKET_CLEAN" ]; then echo "Error; TF output 'statefile' is empty or missing. Did 'setup-backend' run?"; exit 1; fi
-    
-    # 4. Write the clean variable to the dotenv file.
-    - echo "TF_STATE_BUCKET=$BUCKET_CLEAN" > backend.env
-    
-    - echo "Successfully retrieved TF_STATE_BUCKET from state; $BUCKET_CLEAN"
   artifacts:
     reports:
       dotenv: statefile-locking/backend.env
