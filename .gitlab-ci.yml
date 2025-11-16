@@ -37,13 +37,23 @@ get-backend-vars:
   script:
     - cd statefile-locking
     - terraform init
-    # Extract the value, remove leading/trailing whitespace/control characters, and check if empty.
-    - BUCKET_NAME=$(terraform output -raw statefile | tr -d '\n\r ' | tr -d '\033[0-9;]*[a-zA-Z]')
-    - if [ -z "$BUCKET_NAME" ]; then echo "Error TF output 'statefile' is empty or invalid."; exit 1; fi
-    - echo "TF_STATE_BUCKET=$BUCKET_NAME" > backend.env
-    - echo "Successfully retrieved TF_STATE_BUCKET from state."
+    
+    # 1. Extract the raw bucket name.
+    - BUCKET_RAW=$(terraform output -raw statefile)
+    
+    # 2. Use 'sed' to remove ALL non-printable characters (including color codes and the garbage output).
+    - BUCKET_CLEAN=$(echo "$BUCKET_RAW" | sed 's/[^[:print:]]//g')
+    
+    # 3. Validation: Check if the bucket name is now empty or still invalid.
+    - if [ -z "$BUCKET_CLEAN" ]; then echo "Error: TF output 'statefile' is empty or invalid after cleanup."; exit 1; fi
+    
+    # 4. Write the clean variable to the dotenv file.
+    - echo "TF_STATE_BUCKET=$BUCKET_CLEAN" > backend.env
+    
+    - echo "Successfully retrieved TF_STATE_BUCKET from state: $BUCKET_CLEAN"
   artifacts:
     reports:
+      # Ensure this path is correct:
       dotenv: statefile-locking/backend.env
   when: on_success 
 
