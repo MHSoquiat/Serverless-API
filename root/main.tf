@@ -71,6 +71,10 @@ resource "aws_iam_role_policy_attachment" "lb-log" {
 
 terraform {
   backend "s3" {
-
+    bucket = "soki-projects-statefiles"
+    key = "projects/lb-api"
+    region = "ap-southeast-1"
+    use_lockfile = true
+    encrypt = true
   }
 }

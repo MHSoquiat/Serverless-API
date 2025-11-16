@@ -1,6 +1,4 @@
 stages:
-  - backend
-  - env
   - test
   - build
   - deploy 
@@ -14,52 +12,12 @@ before_script:
   - mv terraform /usr/local/bin
   - terraform --version
 
-# --- Backend Setup (Runs infrequently/manually) ---
-setup-backend: 
-  stage: backend
-  script:
-    - cd statefile-locking
-    - terraform init
-    - terraform validate
-    - terraform apply --auto-approve
-  rules:
-    - if: '$CI_COMMIT_TITLE =~ /backend-setup/'
-      when: manual
-    - if: '$CI_COMMIT_BRANCH == "main"'
-      changes:
-        - statefile-locking/**/*
-      when: on_success
-    - when: never
-
-# --- Backend Vars Retrieval (Always runs to satisfy dependencies) ---
-get-backend-vars:
-  stage: env
-  script:
-    - cd statefile-locking
-    - terraform init
-    
-    # Extract bucket name (fails if empty)
-    - BUCKET=$(terraform output -raw bucket | sed 's/\x1b\[[0-9;]*m//g')
-    - if [ -z "$BUCKET" ]; then echo "ERROR; Terraform output 'bucket' is empty"; exit 1; fi
-
-    - echo "TF_STATE_BUCKET=$BUCKET" > backend.env
-
-    - echo "--- Contents of backend.env ---"
-    - cat backend.env
-  artifacts:
-    reports:
-      dotenv: statefile-locking/backend.env
-  when: on_success
-
 # --- Root Jobs: Test (Plan/Validation) ---
 test-root:
   stage: test
-  needs:
-    - get-backend-vars
   script:
     - cd root
-    - echo "Using backend S3 bucket $TF_STATE_BUCKET"
-    - terraform init -backend-config="bucket=$TF_STATE_BUCKET" -backend-config="key=environments/root-module.tfstate" -backend-config="region=ap-southeast-1" -backend-config="use_lockfile=true" -backend-config="encrypt=true"
+    - terraform init 
     - terraform validate
     - terraform plan
   rules:
@@ -77,7 +35,7 @@ build-root:
     - get-backend-vars
   script:
     - cd root
-    - terraform init -backend-config="bucket=$TF_STATE_BUCKET" -backend-config="key=environments/root-module.tfstate" -backend-config="region=ap-southeast-1" -backend-config="use_lockfile=true" -backend-config="encrypt=true"
+    - terraform init
     - terraform apply --auto-approve
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'

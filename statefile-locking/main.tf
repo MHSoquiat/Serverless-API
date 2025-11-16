@@ -1,18 +1,9 @@
-terraform {
-  backend "s3" {
-    bucket = "statefile-soki-lb-api-v6"
-    key    = "statefile-locking/terraform.tfstate"
-    region = "ap-southeast-1"
-    encrypt = true
-  }
-}
-
 provider "aws" {
   region = "ap-southeast-1"
 }
 
 resource "aws_s3_bucket" "statefile" {
-  bucket = "statefile-soki-lb-api-v6"
+  bucket = "soki-projects-statefiles"
 
   lifecycle {
     prevent_destroy = true
