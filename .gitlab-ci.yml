@@ -38,18 +38,14 @@ get-backend-vars:
     - cd statefile-locking
     - terraform init
     
-    # Combined command: 
-    # 1. Runs 'terraform output -raw statefile'
-    # 2. Redirects standard error (2) to /dev/null (silences warnings/errors)
-    # 3. Pipes the clean bucket name to sed to remove any non-printable characters.
-    # 4. Pipes the result to awk to format it as KEY=VALUE.
-    # 5. Writes the result to backend.env.
-    - terraform output -raw statefile 2>/dev/null | sed 's/[^[:print:]]//g' | awk -v name="TF_STATE_BUCKET" '{print name"="$0}' > backend.env
-    
-    # Optional: Read the variable back out to confirm it's clean (for debugging)
+    # Extract bucket name (fails if empty)
+    - BUCKET=$(terraform output -raw statefile | sed 's/\x1b\[[0-9;]*m//g')
+    - if [ -z "$BUCKET" ]; then echo "ERROR; Terraform output 'statefile' is empty"; exit 1; fi
+
+    - echo "TF_STATE_BUCKET=$BUCKET" > backend.env
+
     - echo "--- Contents of backend.env ---"
     - cat backend.env
-    
   artifacts:
     reports:
       dotenv: statefile-locking/backend.env
