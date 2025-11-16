@@ -50,7 +50,7 @@ get-backend-vars:
     # 4. Write the clean variable to the dotenv file.
     - echo "TF_STATE_BUCKET=$BUCKET_CLEAN" > backend.env
     
-    - echo "Successfully retrieved TF_STATE_BUCKET from state: $BUCKET_CLEAN"
+    - echo "Successfully retrieved TF_STATE_BUCKET from state $BUCKET_CLEAN"
   artifacts:
     reports:
       # Ensure this path is correct:
