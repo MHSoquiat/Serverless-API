@@ -45,7 +45,7 @@ get-backend-vars:
     - BUCKET_CLEAN=$(echo "$BUCKET_RAW" | sed 's/[^[:print:]]//g')
     
     # 3. Validation: Check if the bucket name is now empty or still invalid.
-    - if [ -z "$BUCKET_CLEAN" ]; then echo "Error: TF output 'statefile' is empty or invalid after cleanup."; exit 1; fi
+    - if [ -z "$BUCKET_CLEAN" ]; then echo "Error; TF output 'statefile' is empty or invalid after cleanup."; exit 1; fi
     
     # 4. Write the clean variable to the dotenv file.
     - echo "TF_STATE_BUCKET=$BUCKET_CLEAN" > backend.env
