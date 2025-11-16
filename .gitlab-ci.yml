@@ -39,8 +39,8 @@ get-backend-vars:
     - terraform init
     
     # Extract bucket name (fails if empty)
-    - BUCKET=$(terraform output -raw statefile | sed 's/\x1b\[[0-9;]*m//g')
-    - if [ -z "$BUCKET" ]; then echo "ERROR; Terraform output 'statefile' is empty"; exit 1; fi
+    - BUCKET=$(terraform output -raw bucket | sed 's/\x1b\[[0-9;]*m//g')
+    - if [ -z "$BUCKET" ]; then echo "ERROR; Terraform output 'bucket' is empty"; exit 1; fi
 
     - echo "TF_STATE_BUCKET=$BUCKET" > backend.env
 
