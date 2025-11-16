@@ -2,6 +2,11 @@
 
 All notable changes and updates to this repository will be documented in this file.
 
+## [1.0.3]
+
+### Modified
+- **.gitlab-ci.yml**: removed statefile set up and improved pipeline with val, plan, and apply stages
+
 ## [1.0.2]
 
 ### Added

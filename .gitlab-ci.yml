@@ -1,43 +1,59 @@
 stages:
-  - test
-  - build
-  - deploy 
+  - validate
+  - plan
+  - apply
+
+variables:
+  TF_VERSION: "1.13.5"
 
 before_script:
+  - set -euo pipefail
   - apt-get update -y
   - apt-get install -y curl unzip
-  - TF_VERSION="1.13.5"
   - curl -L -o terraform.zip "https://releases.hashicorp.com/terraform/${TF_VERSION}/terraform_${TF_VERSION}_linux_amd64.zip"
   - unzip terraform.zip
-  - mv terraform /usr/local/bin
+  - mv terraform /usr/local/bin/
   - terraform --version
 
-# --- Root Jobs: Test (Plan/Validation) ---
-test-root:
-  stage: test
+cache:
+  paths:
+    - .terraform/
+
+# --- VALIDATION STAGE ---
+validate:
+  stage: validate
   script:
     - cd root
-    - terraform init 
+    - terraform init -backend=false
+    - terraform fmt -check
     - terraform validate
-    - terraform plan
   rules:
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
-      changes:
-        - root/**/*
-    - if: '$CI_COMMIT_BRANCH == "main"'
-      changes:
-        - root/**/*
+    - exists:
+        - root/*.tf
 
-# --- Root Jobs: Build (Apply) ---
-build-root:
-  stage: build
+# --- PLAN STAGE ---
+plan:
+  stage: plan
   script:
     - cd root
     - terraform init
-    - terraform apply --auto-approve
+    - terraform plan -out=tfplan
+  artifacts:
+    paths:
+      - root/tfplan
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == "main"'
+
+# --- APPLY STAGE ---
+apply:
+  stage: apply
+  script:
+    - cd root
+    - terraform init
+    - terraform apply -auto-approve tfplan
+  dependencies:
+    - plan
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
-      changes:
-        - root/**/*
-      when: on_success
-    - when: never
+      when: manual
