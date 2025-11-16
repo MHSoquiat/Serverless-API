@@ -31,8 +31,6 @@ test-root:
 # --- Root Jobs: Build (Apply) ---
 build-root:
   stage: build
-  needs:
-    - get-backend-vars
   script:
     - cd root
     - terraform init
