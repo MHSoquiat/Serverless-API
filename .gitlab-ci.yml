@@ -2,7 +2,7 @@ stages:
   - validate
   - plan
   - apply
-  - notify     # <--- NEW STAGE
+  - notify
 
 variables:
   TF_VERSION: "1.13.5"
@@ -10,8 +10,7 @@ variables:
 before_script:
   - set -euo pipefail
   - apt-get update -y
-  - apt-get install -y curl unzip python3 python3-pip
-  - pip3 install boto3  # Needed for SES email
+  - apt-get install -y curl unzip python3 python3-venv
   - curl -L -o terraform.zip "https://releases.hashicorp.com/terraform/${TF_VERSION}/terraform_${TF_VERSION}_linux_amd64.zip"
   - unzip terraform.zip
   - mv terraform /usr/local/bin/
@@ -21,7 +20,7 @@ cache:
   paths:
     - .terraform/
 
-# --- VALIDATION STAGE ---
+# --- VALIDATE STAGE ---
 validate:
   stage: validate
   script:
@@ -54,7 +53,7 @@ apply:
     - cd root
     - terraform init
     - terraform apply -auto-approve tfplan
-    - terraform output -raw api_endpoint > api_endpoint.txt   # <--- Save endpoint
+    - terraform output -raw api_endpoint > api_endpoint.txt
   artifacts:
     paths:
       - root/api_endpoint.txt
@@ -69,19 +68,24 @@ notify:
   stage: notify
   script:
     - cd root
-    - API_ENDPOINT=$(cat api_endpoint.txt)
-
-      # Python SES email sender
+    # create virtual environment
+    - python3 -m venv venv
+    - source venv/bin/activate
+    - pip install --upgrade pip
+    - pip install boto3
+    # export API endpoint as env var
+    - export API_ENDPOINT=$(cat api_endpoint.txt)
+    # create SES email sender script
     - |
-      cat <<EOF > send_email.py
+      cat <<'EOF' > send_email.py
       import boto3
       import os
 
       ses = boto3.client(
           "ses",
           region_name=os.environ["SES_REGION"],
-          aws_access_key_id=os.environ["SES_SMTP_USERNAME"],
-          aws_secret_access_key=os.environ["SES_SMTP_PASSWORD"]
+          aws_access_key_id=os.environ["AWS_ACCESS_KEY_ID"],      # IAM access key
+          aws_secret_access_key=os.environ["AWS_SECRET_ACCESS_KEY"]  # IAM secret
       )
 
       ses.send_email(
@@ -89,14 +93,12 @@ notify:
           Destination={"ToAddresses": [os.environ["SES_TO_EMAIL"]]},
           Message={
               "Subject": {"Data": "Terraform Deployment Complete"},
-              "Body": {
-                  "Text": {"Data": f"Your API has been deployed.\nEndpoint: {os.environ['API_ENDPOINT']}"}
-              }
+              "Body": {"Text": {"Data": f"Your API has been deployed.\nEndpoint: {os.environ['API_ENDPOINT']}"}}
           },
       )
       EOF
-
-    - API_ENDPOINT="$API_ENDPOINT" python3 send_email.py
+    # run SES email sender
+    - python send_email.py
   dependencies:
     - apply
   rules:
