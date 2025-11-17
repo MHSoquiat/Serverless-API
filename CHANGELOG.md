@@ -2,12 +2,20 @@
 
 All notable changes and updates to this repository will be documented in this file.
 
-## [1.0.3]
+## [1.0.4] - 2025-01-01
+
+### Moved
+- Pushed to GitHub
+
+### Modified
+- Modified README
+
+## [1.0.3] - 2025-01-01
 
 ### Modified
 - **.gitlab-ci.yml**: removed statefile set up and improved pipeline with val, plan, and apply stages
 
-## [1.0.2]
+## [1.0.2] - 2025-01-01
 
 ### Added
 - **CHANGELOG.md**: Added a change log to keep track of the changes in this repository.
