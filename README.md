@@ -97,11 +97,89 @@ To setup your Amazon SES, follow this steps:
 
 ### GitLab Setup
 
+For this section, we will set up the environment variables needed for this project. But first, we will gather the needed variables: Access Key and Secret Access Key, and Amazon SES SMTP Credentials.
 
+**Access Key and Secret Access Key**
+
+1. Head over to your AWS Management Console and navigate to IAM Users, and create a user:
+
+![IAM 1](./output/gitlab/4.png)
+
+2. As Terraform interacts with various cloud providers such as AWS, it is important to verify your identity with Terraform. That is what we’re going to do. We are going to set up Authentication and Authorization using AWS IAM. First, name your user. I used my nickname here “Soki”
+
+![IAM 2](./output/gitlab/5.png)
+
+3. Next, we are going to set permissions. We will give this user the AdministratorAccess for now, as this is my personal account and we want the flexibility to provision any AWS resources for this demo. However, if you want to limit the access and authorization of the user you’re creating, please apply the minimum access as possible.
+
+![IAM 3](./output/gitlab/6.png)
+
+4. Review the permissions that you have given, once everything is okay, press create user to create the user.
+
+![IAM 4](./output/gitlab/7.png)
+
+5. Navigate to your user and press Create Access Key
+
+![IAM 5](./output/gitlab/8.png)
+
+6. Select Command Line Interface, and tick the confirmation checkbox at the bottom and click next.
+
+![IAM 6](./output/gitlab/9.png)
+
+7. Click create access key and you should be prompted to the retrieve your access keys. Save your access key and secret access key to your Local Device or Password Managers.
+
+![IAM 7](./output/gitlab/10.png)
+
+**Amazon SES**
+
+Here are the environment variables we will be getting in Amazon SES:
+- SES_SMTP_USERNAME
+- SES_SMTP_PASSWORD
+- SES_FROM_EMAIL
+- SES_TO_EMAIL
+- SES_REGION
+
+1. For SES_SMTP_USERNAME adn SES_SMTP_PASSWORD, navigate to Amazon SES > SMTP Settings > Create SMTP Credentials:
+
+![SES 1](./output/gitlab/1.png)
+
+Retrieve and save the information for now. 
+
+>Choose your own username or let SES randomly generate it for you.
+
+2. SES_FROM_EMAIL = Email that you input earlier in setting up Amazon SES. This needs to be verified
+
+3. SES_TO_EMAIL = Navigate to Identities, and input another email that you can verify. 
+
+4. SES_REGION, the region where you set up your Amazon SES.
+
+**GitLab Variables**
+
+After setting up your GitLab repository, navigate to your project settings. Under settings, head over to CI/CD > Variables. Press Add Variables, input these following keys, and input their respective values from the previous steps:
+
+- AWS_ACCESS_KEY_ID
+- AWS_SECRET_ACCESS_KEY
+- SES_FROM_EMAIL
+- SES_REGION
+- SES_SMTP_PASSWORD
+- SES_SMTP_USERNAME
+- SES_TO_EMAIL
+
+[!GitLab Env Var](./output/gitlab/2.png)
 
 ### Running the Pipeline
 
+To test the pipeline, create a change in the AWS Lambda Configuration in the main configuration file. Change the message of the greetings to your preference. Once you created a commit and pushed it to the origin, the pipeline will run. Here are the expected outputs:
 
+**Email Notification**:
+![Email](./output/exec/3.png)
+
+**Public API Endpoint URL**:
+
+[API ENDPOINT URL](https://t0bpqmunv8.execute-api.ap-southeast-1.amazonaws.com/)
+
+**CloudWatch Livetrail**:
+
+![CloudWatch](./output/exec/11.png)
 
 ## Features
 
