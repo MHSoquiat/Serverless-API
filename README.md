@@ -10,7 +10,7 @@ This repository contains the executable code for my Serverless API, together wit
 
 Here is the architecture diagram for this project:
 
-![System Architecture](./output/reqs/Projects.png)
+![System Architecture](./output/reqs/SA-ArcDia.png)
 
 ### Resources
 
